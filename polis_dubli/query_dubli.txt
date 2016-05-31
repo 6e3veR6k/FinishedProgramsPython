@@ -1,0 +1,11 @@
+SELECT COUNT(*), D.Code, D.PolisNumber
+FROM(
+ SELECT DISTINCT P.PolisNumber, LEFT(PT.Name, 3) AS Code , P.InsurerGID
+ FROM Products AS P
+  INNER JOIN Programs AS Pg ON Pg.ProductGID=P.gid
+   AND Pg.Deleted=0
+  INNER JOIN meta.ProgramTypes AS PT ON PT.gid=Pg.ProgramTypeGID
+ WHERE P.Deleted=0
+) AS D
+GROUP BY D.Code, D.PolisNumber
+HAVING COUNT(*)>1

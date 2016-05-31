@@ -1,0 +1,161 @@
+SELECT
+	Base.IdentificationCodeEDRPOU,
+	Base.Name,
+	Base.ProgramCode,
+	Base.RPay,
+	Base.AV,
+	Base.BranchCode,
+	Base.CName,
+	Base.DTName,
+	Base.id
+	
+FROM
+(
+SELECT DISTINCT F.IdentificationCodeEDRPOU,
+	F.Name,
+	AAC.ProgramCode,
+	AAC.RealPaymentValue AS RPay,
+	AAC.CommissionValue AS AV,
+	AAC.BranchCode,
+	AC.Name AS CName,
+	Doc.DTName,
+	AA.id
+
+FROM
+	AgentActs AS AA
+
+INNER JOIN
+	Faces AS F
+		ON F.gid=AA.AgentGID
+
+INNER JOIN
+	(
+	SELECT
+		AAC.AgentActGID,
+		B.BranchCode,
+		AAC.InsuranceTypeCode AS ProgramCode,
+		SUM(ROUND(AAC.CommissionValue, 2)) AS CommissionValue,
+		SUM(ROUND(AAC.RealPaymentValue, 2)) AS RealPaymentValue
+		
+	FROM
+		AgentActsCommissions AS AAC
+	
+	INNER JOIN
+		(
+		SELECT
+			P.gid,
+			LEFT(B.BranchCode, 4) AS BranchCode
+		
+		FROM
+			OrantaSch.dbo.Products AS P
+		
+		INNER JOIN
+			OrantaSch.dbo.Branches AS B
+				ON B.gid=P.BranchGID
+					AND B.BranchCode IS NOT NULL
+					AND ( {6} )
+
+		) AS B
+			ON B.gid=AAC.ProductGID
+	
+	WHERE
+		AAC.Deleted=0
+	
+	GROUP BY
+		AAC.AgentActGID,
+		B.BranchCode,
+		AAC.InsuranceTypeCode
+
+	)AS AAC
+		ON AAC.AgentActGID=AA.gid
+	
+INNER JOIN
+	(
+	SELECT
+		AA.LoggedEntityGID
+	
+	FROM
+		log.AgentActs AS AA
+	INNER JOIN
+		(
+		SELECT
+			AA.LoggedEntityGID,
+			MAX(AA.id) AS id
+
+		FROM 
+			log.AgentActs AS AA
+		
+		WHERE
+			AA.ActionDate BETWEEN '{2}' AND '{3}'
+		
+		GROUP BY
+			AA.LoggedEntityGID
+		
+		) AS AF
+			ON AF.LoggedEntityGID=AA.LoggedEntityGID
+	
+	WHERE
+		AA.StatusGID='{4}'
+	
+	) AS logFilter
+		ON logFilter.LoggedEntityGID=AA.gid
+	
+INNER JOIN
+	meta.AgentChanels AS AC
+		ON AC.gid=AA.ChanelGID
+			AND AC.Code='{5}'
+LEFT JOIN
+	(
+	SELECT
+		D.ObjectGID,
+		CICT.ChanelGID,
+		CICT.CommissionTypeGID,
+		DT.Name AS DTName,
+		D.Number,
+		ISNULL(D.StartDate, CONVERT(date, '1900-01-01')) AS StartDate,
+		ISNULL(D.EndDate, CONVERT(date, '9999-12-31')) AS EndDate
+
+	FROM
+		Metis.dbo.Documents AS D
+	
+	INNER JOIN
+		meta.ChanelInCommissionTypes AS CICT
+			ON CICT.DocumentTypeGID=D.DocumentTypeGID
+	
+	INNER JOIN
+		Metis.meta.DocumentTypes AS DT
+			ON DT.gid=D.DocumentTypeGID
+	
+	WHERE D.Deleted=0
+	
+	) AS Doc
+		ON Doc.ObjectGID=AA.AgentGID
+			AND Doc.StartDate<=AA.StartPeriod
+			AND Doc.EndDate>=AA.EndPeriod
+			AND Doc.ChanelGID=AA.ChanelGID
+			AND Doc.CommissionTypeGID=AA.CommissionTypeGID
+
+WHERE
+	AA.Deleted=0
+	AND AA.Period='{1}'
+	AND AA.CommissionTypeGID='{0}'
+
+) AS Base
+
+ORDER BY
+	Base.BranchCode,
+	Base.Name,
+	Base.IdentificationCodeEDRPOU,
+	Base.ProgramCode
+
+/*******************************/
+/*******************************
+@CommissionTypeGID	-	'{0}'
+@Period 			- 	'{1}'
+@StartDate			-	'{2}'
+@EndDate 			- 	'{3}'
+@StatusGID 			- 	'{4}'
+@Chanel 			- 	'{5}'
+@BranchCode : ({6})
+*******************************/
+/*******************************/

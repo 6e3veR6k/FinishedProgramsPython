@@ -1,0 +1,151 @@
+DECLARE @Period AS bigint, @IKey AS nvarchar(40)
+SET @Period={0}
+
+CREATE TABLE #TT(
+	BrCode nchar(4) NOT NULL,
+	BrName nvarchar(255) NOT NULL,
+	BlankType int NOT NULL,
+	Seria nvarchar(5) NOT NULL,
+	Number bigint NOT NULL,
+	IsLBound int NOT NULL,
+	IsRBound int NOT NULL,
+	PRIMARY KEY CLUSTERED(BrCode, BlankType, Seria, Number)
+	)
+
+INSERT INTO #TT(
+	BrCode,
+	BrName,
+	BlankType,
+	Seria,
+	Number,
+	IsLBound,
+	IsRBound
+	)
+
+
+SELECT
+	BBasis.BrCode,
+	BBasis.BrName,
+	BBasis.BlankType,
+	BBasis.Seria,
+	BBasis.Number,
+	ISNULL(LBound.BFlag, CONVERT(int, 1)) AS LRBound,
+	ISNULL(RBound.BFlag, CONVERT(int, 1)) AS RRBound
+
+
+FROM	(SELECT
+		B.BlankType,
+		B.Seria, B.Number,
+		LEFT(Br.BranchCode, 4) AS BrCode,
+		Br.Name AS BrName,
+		B.id
+
+	FROM
+		DWH.Himalia.BlankFact AS BF
+	INNER JOIN
+		DWH.Himalia.Blanks AS B
+			ON B.id=BF.BlankID
+	INNER JOIN
+		DWH.meta.Branches AS Br
+			ON Br.id=BF.BranchID
+	WHERE
+		BF.LoadState=@Period
+			AND BF.StatusID IN ({1})
+	) AS BBasis
+
+
+LEFT JOIN	(SELECT
+			B.BlankType,
+			B.Seria,
+			B.Number,
+			LEFT(Br.BranchCode, 4) AS BrCode,
+			CONVERT(int, 0) AS BFlag
+
+
+		FROM
+			DWH.Himalia.BlankFact AS BF
+		INNER JOIN
+			DWH.Himalia.Blanks AS B
+				ON B.id=BF.BlankID
+		INNER JOIN
+			DWH.meta.Branches AS Br
+				ON Br.id=BF.BranchID
+		WHERE
+			BF.LoadState=@Period
+				AND BF.StatusID IN ({1})
+		) AS LBound
+			ON LBound.BlankType=BBasis.BlankType
+				AND LBound.Seria=BBasis.Seria
+				AND LBound.BrCode=BBasis.BrCode
+				AND LBound.Number+1=BBasis.Number
+
+
+LEFT JOIN	(SELECT
+			B.BlankType,
+			B.Seria,
+			B.Number,
+			LEFT(Br.BranchCode, 4) AS BrCode,
+			CONVERT(int, 0) AS BFlag
+
+
+		FROM
+			DWH.Himalia.BlankFact AS BF
+		INNER JOIN
+			DWH.Himalia.Blanks AS B
+				ON B.id=BF.BlankID
+		INNER JOIN
+			DWH.meta.Branches AS Br
+				ON Br.id=BF.BranchID
+		WHERE
+			BF.LoadState=@Period
+				AND BF.StatusID IN ({1})
+		) AS RBound
+			ON RBound.BlankType=BBasis.BlankType
+				AND RBound.Seria=BBasis.Seria
+				AND RBound.BrCode=BBasis.BrCode
+				AND RBound.Number-1=BBasis.Number
+
+
+WHERE RBound.BlankType IS NULL
+	OR LBound.BlankType IS NULL
+
+
+SET @IKey=CONVERT(nvarchar(40), NEWID())
+EXEC('CREATE NONCLUSTERED INDEX ['+@IKey+'_LBound] ON #TT(IsLBound)')
+EXEC('CREATE NONCLUSTERED INDEX ['+@IKey+'_RBound] ON #TT(IsRBound)')
+
+GO
+
+SELECT
+	B.BrCode,
+	B.BrName,
+	BT.Name,
+	B.Seria,
+	B.SInterval,
+	B.EInterval,
+	B.EInterval-B.SInterval+1 AS ISize
+
+FROM	(SELECT
+		LB.BrCode,
+		LB.BrName,
+		LB.BlankType,
+		LB.Seria,
+		LB.Number AS SInterval,
+		MIN(RB.Number) AS EInterval
+
+
+	FROM #TT AS LB
+	INNER LOOP JOIN #TT AS RB ON RB.BlankType=LB.BlankType
+			AND RB.BrCode=LB.BrCode
+			AND RB.Seria=LB.Seria
+			AND RB.Number>=LB.Number
+			AND RB.IsRBound=1
+	WHERE LB.IsLBound=1
+	GROUP BY LB.BrCode, LB.BrName, LB.BlankType, LB.Seria, LB.Number
+) AS B
+	INNER JOIN DWH.meta.BlankTypes AS BT ON BT.id=B.BlankType
+	ORDER BY B.BrCode
+
+GO
+
+DROP TABLE #TT
