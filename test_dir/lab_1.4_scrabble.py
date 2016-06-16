@@ -13,7 +13,7 @@ def scrabble_score(word):
                 scrabble_score += score[i]
 
 
-    print scrabble_score
+print scrabble_score
 
 scrabble_score('HelloWorld')
 scrabble_score('Dima')

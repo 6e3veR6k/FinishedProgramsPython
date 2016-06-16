@@ -9,21 +9,22 @@ from numbers import Number
 from decimal import Decimal
 
 
-class SQL:
-    def __init__(self, server, database):
+class SQL(dict):
+    def __init__(self, server, database, driver='{SQL Server Native Client 11.0}', charset='utf-8', tr_connect='YES'):
+        dict.__init__({})
         self.server = server
         self.database = database
-        self.serverInfo = dict()
-        self.serverInfo['DRIVER'] = '{SQL Server Native Client 11.0}'
-        self.serverInfo['CHARSET'] = 'utf-8'
-        self.serverInfo['TRUSTED_CONNECTION'] = 'YES'
-        self.serverInfo['Convert_unicode'] = True
-        self.serverInfo['SERVER'] = server
-        self.serverInfo['DATABASE'] = database
-        self.sql_info()
+        self.driver = driver
+        self.charset = charset
+        self.tr_connect = tr_connect
+        self['DRIVER'] = self.driver
+        self['CHARSET'] = self.charset
+        self['TRUSTED_CONNECTION'] = self.tr_connect
+        self['SERVER'] = self.server
+        self['DATABASE'] = self.database
 
     def sql_info(self):
-        return ';'.join('%s=%s' % (k, v) for k, v in self.serverInfo.items())
+        return ';'.join('%s=%s' % (k, v) for k, v in self.items())
 
 
 class ActDate:
@@ -151,18 +152,3 @@ if os.path.exists('sql_query_commission_4.txt'):
 
     conn.close()
 
-
-
-
-
-
-
-
-
-# db05 = SQL('hq01db05', 'Callisto')
-# conn = pyodbc.connect(db05.sqlInfo)
-#
-# cursor = conn.cursor()
-# cursor.execute(query)
-#
-# row = cursor.fetchone()
