@@ -135,8 +135,8 @@ if os.path.exists('sql_query_commission_4.txt'):
     print tsql_query_formatted
     sql_file.close()
 
-    db05 = SQL('hq01db05', 'Callisto')
-    conn = pyodbc.connect(db05.sql_info())
+    # db05 = SQL('hq01db05', 'Callisto')
+    conn = pyodbc.connect(SQL('hq01db05', 'Callisto').sql_info())
     cursor = conn.cursor()
 
     temp = sys.stdout

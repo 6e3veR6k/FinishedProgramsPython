@@ -5,7 +5,7 @@ import random
 
 number = list(range(10))
 comp_number = random.sample(number, 4) # как работает random.sample(), какой обьект возвращает
-print comp_number
+# print comp_number
 
 
 def ch(string):
@@ -16,13 +16,13 @@ def ch(string):
 
 
 def user_number():
-    user_choice = raw_input("Enter four-digits number: ")
+    user_choice = str(raw_input("Enter four-digits number: "))
     user_num = ''.join(user_choice.split())
 
     if len(user_num) == 4 and user_num.isdigit() and ch(user_num):
         return user_num
     else:
-        print "Try something else"
+        print "Ouch! Try enter 4-digits number!!!"
         return user_number()
 
 
@@ -45,5 +45,3 @@ while user_try != [4, 0]:
 
 
 print "You win!!!"
-
-
