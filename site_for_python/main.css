@@ -1,0 +1,99 @@
+/* header style */
+
+.title_and_navigation {
+	height: auto;
+}
+
+.header_title {
+    overflow: hidden;
+/*    width: inherit;*/
+/*    height: 68px;*/
+    padding:  0 60px;
+}
+
+.site_logo_text {
+	float: left;
+}
+
+.site_logo_text h1 {
+	font-family: Century Gothic;
+	font-weight: lighter;
+}
+
+.site_logo_text sup {
+	color: #079acb;
+
+}
+
+.site_logo_text span {
+	font-weight: bold;
+}
+
+.auth_module {
+	float:right;
+    margin: 22px
+}
+
+.nav_menu {
+        text-align: center;
+        float: none;
+}
+
+.nav_menu ul {
+    height: 60px;
+	padding:  20px 10px;
+	margin: 0px;
+    background-color: #324358;
+}
+
+.nav_menu ul li {
+
+	margin: 20px;
+	list-style: none;
+	display: inline;
+}
+
+.nav_menu ul li a {
+	text-decoration: none;
+    font-family: Ubuntu;
+/*    font-weight: bolder;*/
+    color: burlywood;
+}
+
+.nav_menu ul li a:hover {
+	text-decoration: none;
+	color:#db5f22;
+	cursor: pointer;
+}
+
+/* body style */
+
+.main_body_container {
+	width: 100%;
+	height: 100vh;
+	padding: 0;
+	margin: 0;
+}
+.center_article {
+    display: block;
+    background-color: azure;
+    height: 100%;
+}
+
+.col_1 {
+    width: 33%;
+    float: left;
+    height: 30px;
+    background-color: cornflowerblue;
+    border-color: black;
+    border-style: inset;
+    border-width: thin;
+    
+}
+
+.my_footer {
+    display: block;
+    background-color: black;
+    height: 100%;
+    wid
+}

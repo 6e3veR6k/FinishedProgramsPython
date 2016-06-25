@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Link shortener</title>
+
+    <style>
+        .success {
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Link shortener</h1>
+
+    {% if success %}
+    <p class="success">{{ success }}</p>
+    {% endif %}
+
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('create_link') }}">
+        <div>
+            <label for="name">Link name:</label>
+            <input type="text" id="name" name="name" value="{{ name }}" />
+        </div>
+
+        <div>
+            <label for="url">URL name:</label>
+            <input type="url" id="url" name="url" value="{{ url }}" />
+        </div>
+
+        <input type="submit" value="Add link" />
+    </form>
+</body>
+</html>
