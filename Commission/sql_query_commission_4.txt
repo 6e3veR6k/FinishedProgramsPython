@@ -53,7 +53,10 @@ INNER JOIN
 			OrantaSch.dbo.Branches AS B
 				ON B.gid=P.BranchGID
 					AND B.BranchCode IS NOT NULL
-					AND ( {6} )
+					AND (
+					LEFT(B.BranchCode, 2)='100'
+					{6}
+					)
 
 		) AS B
 			ON B.gid=AAC.ProductGID
@@ -156,6 +159,6 @@ ORDER BY
 @EndDate 			- 	'{3}'
 @StatusGID 			- 	'{4}'
 @Chanel 			- 	'{5}'
-@BranchCode : ({6})
+@BranchCode : (LEFT(B.BranchCode, 2)='100' {6})
 *******************************/
 /*******************************/

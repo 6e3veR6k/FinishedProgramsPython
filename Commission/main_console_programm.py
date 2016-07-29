@@ -1,190 +1,215 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from datetime import datetime, date
-import pyodbc
+from datetime import datetime
 import os
-
-
-class SQL:
-    def __init__(self, server, database):
-        self.server = server
-        self.database = database
-        self.serverInfo = dict()
-        self.serverInfo['DRIVER'] = '{SQL Server Native Client 11.0}'
-        self.serverInfo['CHARSET'] = 'utf-8'
-        self.serverInfo['TRUSTED_CONNECTION'] = 'YES'
-        self.serverInfo['Convert_unicode'] = True
-        self.serverInfo['SERVER'] = server
-        self.serverInfo['DATABASE'] = database
-        self.sql_info()
-
-    def sql_info(self):
-        return ';'.join('%s=%s' % (k, v) for k, v in self.serverInfo.items())
-
-
-class ActDate:
-    def __init__(self, period, date_month_from, date_day_from):
-        self.now_date = datetime.now()
-        self.period = period
-        self.date_month_from = date_month_from
-        self.date_day_from = date_day_from
-        self.get_act_closed_period()
-        self.get_act_period()
-
-    def get_act_closed_period(self):
-        """ Return when acts were closed """
-        date_from = datetime(self.now_date.year, self.date_month_from, self.date_day_from, 0, 5)
-        return date_from
-
-    def get_act_period(self):
-        """ Return act's period """
-        date_format = date(int(self.now_date.year), period, 1)
-        return date_format
-
-
-def get_commission_type_gid():
-    """ Return commission type GID """
-    comm_type = {'1': ('BEDED8D6-159C-4DEC-869C-25416FCAD1FF', 'IKP'),
-                 '2': ('8CC6A11E-9E88-48A3-9C8C-3F3EC92E16AD', 'Agent'),
-                 '3': ('307AE0E6-5D38-42B8-A576-6C9619837AF9', 'Agreement author')}
-
-    com_id = str(raw_input('Enter commission ID: '))
-
-    while com_id not in comm_type.keys():
-        print 'You must chose between 1, 2 and 3'
-        for elem in comm_type:
-            print 'Commission type {0} has ID: {1}'.format(comm_type[elem][1], elem)
-        com_id = str(raw_input('Enter commission ID: '))
-
-    return comm_type[com_id][0]
-
-
-def get_agent_chanel():
-    chanel_list = ['11', '12', '13', '14', '15', '16', '17', '18', '19', '21', '22', '31', '32', '33']
-    set_chanel = str((raw_input("Enter agent's chanel: ")))
-    while set_chanel not in chanel_list:
-        set_chanel = str(raw_input("Try to choose agent's chanel: "))
-    return set_chanel
+import pymssql
 
 
 """
-@CommissionType   0
-@Period           1
-@StartDate        2
-@EndDate          3
-@StatusGID        4
-@Chanel           5
-branch            6
+@CommissionTypeGID  -   '{0}'   +
+@Period             -   '{1}'
+@StartDate          -   '{2}'
+@EndDate            -   '{3}'
+@StatusGID          -   '{4}'   +
+@Chanel             -   '{5}'   +
+@BranchCode : ({6})             +
 """
 
-if os.path.exists('sql_query_commission_4.txt'):
-    sql_file = open('sql_query_commission_4.txt')
-    tsql_query_fromfile = sql_file.read()
+# @CommissionTypeGID
+comm_type = {
+    1: ('BEDED8D6-159C-4DEC-869C-25416FCAD1FF', "ІКП"),
+    2: ('8CC6A11E-9E88-48A3-9C8C-3F3EC92E16AD', "Агент"),
+    3: ('307AE0E6-5D38-42B8-A576-6C9619837AF9', "Автор угоди")
+}
 
-    comm_type = get_commission_type_gid()
-    now_date = datetime.now()
+# @StatusGID
+status_gid = {
+    1: ("22C7D1EF-CFCF-4F37-8959-003C6669830A", "Затверджений"),
+    2: ("6A328C2F-E582-4334-A6EA-57A1CE6E4D0F", "На узгодженні"),
+    3: ("52AE0988-A1AA-4DDD-AF55-E10B7A067EEB", "Новий"),
+    4: ("8E8AD750-E856-4CB6-B788-F9C0A8321EF9", "Сторно")
+}
 
-    period = int(raw_input('Enter act\'s period: '))
-    while period > now_date.month:
-        print "Not right month, try input correct month"
-        period = int(raw_input('Acts for the period: '))
+# @Chanel
+chanel_list = (
+    11, 12, 13, 14, 15, 16, 17,
+    18, 19, 21, 22, 31, 32, 33
+)
 
-    date_month_from = int(raw_input('Enter month when acts were closed: '))
-    while date_month_from < period or date_month_from > now_date.month:
-        print "Not right month, try input correct month"
-        date_month_from = int(raw_input('Enter month when acts were closed: '))
+# @BranchCode
+branch_code = {
+    1: "Кримська республіканська дирекція НАСК \"Оранта\"",
+    2: "Вінницька обласна дирекція НАСК \"Оранта\"",
+    3: "Волинська обласна дирекція НАСК \"Оранта\"",
+    4: "Дніпропетровська обласна дирекція НАСК \"Оранта\"",
+    5: "Маріупольська дирекція НАСК \"Оранта\"",
+    6: "Житомирська обласна дирекція НАСК \"Оранта\"",
+    7: "Закарпатська обласна дирекція НАСК \"Оранта\"",
+    8: "Запорізька обласна дирекція НАСК \"Оранта\"",
+    9: "Івано-Франківська обласна дирекція НАСК \"Оранта\"",
+    10: "Київська обласна дирекція НАСК \"Оранта\"",
+    11: "Кіровоградська обласна дирекція НАСК \"Оранта\"",
+    12: "Луганська обласна дирекція НАСК \"Оранта\"",
+    13: "Львівська обласна дирекція НАСК \"Оранта\"",
+    14: "Миколаївська обласна дирекція НАСК \"Оранта\"",
+    15: "Одеська обласна дирекція НАСК \"Оранта\"",
+    16: "Полтавська обласна дирекція НАСК \"Оранта\"",
+    17: "Рівненська обласна дирекція НАСК \"Оранта\"",
+    18: "Сумська обласна дирекція НАСК \"Оранта\"",
+    19: "Тернопільська обласна дирекція НАСК \"Оранта\"",
+    20: "Харківська обласна дирекція НАСК \"Оранта\"",
+    21: "Херсонська обласна дирекція НАСК \"Оранта\"",
+    22: "Хмельницька обласна дирекція НАСК \"Оранта\"",
+    23: "Черкаська обласна дирекція НАСК \"Оранта\"",
+    24: "Чернівецька обласна дирекція НАСК \"Оранта\"",
+    25: "Чернігівська обласна дирекція НАСК \"Оранта\"",
+    26: "Київська міська дирекція НАСК \"Оранта\"",
+    27: "Севастопольська міська дирекція НАСК \"Оранта\"",
+    28: "Донецька обласна дирекція НАСК \"Оранта\"",
+    29: "Головний офіс",
+    30: "ДБС НАСК \"Оранта\"",
+    31: "Апарат дирекції"
+}
 
-    date_day_from = int(raw_input('Enter the date when the acts started to close '))
 
-    while date_day_from not in xrange(now_date.day):
-        print "Not right day, try input correct day"
-        date_day_from = int(raw_input('Enter day before acts were closed: '))
-
-    myActDate = ActDate(period, date_month_from, date_day_from)
-
-    act_period = myActDate.get_act_period()
-    act_closed_period_from = myActDate.get_act_closed_period()
-    act_closed_period_to = datetime(now_date.year, now_date.month, now_date.day, now_date.hour, now_date.minute)
-    status_gid = '22C7D1EF-CFCF-4F37-8959-003C6669830A'
-    chanel = get_agent_chanel()
-
-    branch_code_list = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16',
-                        '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31']
-
-    branch_code = raw_input("Enter direction code separated by spaces :")
-    while branch_code not in branch_code_list and len(branch_code.split()) == 0:
-        print "We don't have such direction"
-    user_branch_code = branch_code.split()
-    user_branch = []
-    [user_branch.append(code) for code in user_branch_code if code not in user_branch and code in branch_code_list]
-    sql_query = " LEFT(B.BranchCode, 2)='100' "
-    for code in sorted(user_branch):
-        sql_query += "OR LEFT(B.BranchCode, 2)='{0}' ".format(code)
-
-    result = '{0}k_'.format(chanel)
-    result_file_name = result + '_'.join(user_branch) + '.txt'
-    print result_file_name
-    result_file = open(result_file_name, 'wb')
-
-    tsql_query_formatted = tsql_query_fromfile.format(comm_type, act_period, act_closed_period_from,
-                                                      act_closed_period_to, status_gid, chanel, sql_query)
-
-    print tsql_query_formatted
-    sql_file.close()
-
+def template(file_name):
+    """ Read txt file in the same directory """
     try:
-        db05 = SQL('hq01db05', 'Callisto')
-        conn = pyodbc.connect(db05.sql_info())
+        with open(file_name, "r") as data_file:
+            return data_file.read()
+    except IOError as err:
+        print("File error: " + str(err))
+
+
+def get_gid(gid_dict, user_gid=None):
+    """ Gets gid number depend user's choice """
+    # user_gid = ''
+    while user_gid not in gid_dict:
+        print("Список доступных значений: ")
+        for key, value in gid_dict.items():
+            print(key, " - ", value[1])
+        if user_gid:
+            print("Значение не найдено. Выберите значение из списка: ")
+            for key, value in gid_dict.items():
+                print("{} - {}".format(key, value[1]))
+        user_gid = int(input("Введите значение: "))
+    return gid_dict[user_gid][0]
+
+
+def get_unique(sequence, count=1):
+    """ Collect unique items from sequence """
+    user_list = []
+    while len(user_list) != count:
+        try:
+            user_id = input(" ")
+            if user_id and int(user_id) in sequence:
+                if int(user_id) not in user_list and len(user_list) != count:
+                    user_list.append(int(user_id))
+                elif int(user_id) in user_list and len(user_list) != count:
+                    print("Такое значение уже существует.")
+                else:
+                    break
+            elif user_id and len(user_list) != count:
+                print("Вашего значения нет в списке допустимых.")
+                continue
+            else:
+                break
+        except ValueError as Err:
+            print("Введите число!!! ", Err)
+            continue
+
+    return user_list
+
+
+now_datetime = datetime.now()
+formatted_now_datetime = now_datetime.strftime("%Y-%m-%d %H:%M")
+
+
+def check_user_date(value_start, value_end):
+    while True:
+        try:
+            user_int_value = int(input(" "))
+            if user_int_value in range(value_start, value_end):
+                break
+            else:
+                print("Не верное значение.")
+                continue
+        except ValueError as Err:
+            print("Введите число!!! ", Err)
+            continue
+    return user_int_value
+
+
+if __name__ == '__main__':
+
+    # commission type and acts' status
+    comm_type_gid = get_gid(comm_type)
+    comm_status_gid = get_gid(status_gid, 1)
+
+    # period
+    print("За какой месяц акты?: ", end='')
+    month_period = check_user_date(1, now_datetime.month + 1)
+    period = datetime(now_datetime.year, month_period, 1)
+
+    # start date
+    print("В каком месяце закрытыли акты?: ", end='')
+    month_closed = check_user_date(period.month, now_datetime.month + 1)
+    print("А день закрытия актов?: ", end='')
+    day_closed = check_user_date(1, now_datetime.day)
+    start_date = datetime(now_datetime.year, month_closed, day_closed, 0, 5)
+
+    # end date
+    end_date = formatted_now_datetime
+
+    # channel
+    # на самом деле тут херня, если поменяется тип возвращаемого значения с листа в инт получим ошибку
+    print("Введите канал агента", end='')
+    chanel = get_unique(chanel_list)[0]
+
+    # branch
+    print("Дирекция? ", end='')
+    branch_code_lst = get_unique(branch_code, len(branch_code))
+
+    # formatted query
+    branch_text = " ".join(["OR LEFT(B.BranchCode, 2)='{:02}'".format(code) for code in sorted(branch_code_lst)])
+
+    # query from file
+    query_text = template("sql_query_commission_4.txt").format(comm_type_gid,
+                                                               period.strftime("%Y-%m-%d"),
+                                                               start_date.strftime("%Y-%m-%d %H:%M"),
+                                                               end_date,
+                                                               comm_status_gid,
+                                                               chanel,
+                                                               branch_text
+                                                               )
+
+    if chanel in [22, 18, 17, 15] and comm_type_gid == comm_type[1][0]:
+        output_file = 'part_СПД_ІКП_{}дир_дострокова.txt'.format('_'.join(["{:02}".format(code) for code
+                                                                           in sorted(branch_code_lst)]))
+    elif chanel in [22, 18]:
+        output_file = 'part_СПД_{}дир_дострокова.txt'.format('_'.join(["{:02}".format(code) for code
+                                                                       in sorted(branch_code_lst)]))
+    else:
+        output_file = 'part_{}к_{}дир_дострокова.txt'.format(chanel, '_'.join(["{:02}".format(code) for code
+                                                                               in sorted(branch_code_lst)]))
+
+    parts = []
+    with open(output_file, "w") as outfile:
+        conn = pymssql.connect(server='hq01db05', database='Callisto')
         cursor = conn.cursor()
 
         try:
-            cursor.execute(tsql_query_formatted)
+            cursor.execute(query_text)
             row = cursor.fetchone()
-
             while row:
-
-                for i in range(len(row)):
-                    u = row[i]
-
-                    if isinstance(u, basestring):
-
-                        if type(u) == str:
-                            result_file.write(u + '\t')
-
-                        else:
-                            result_file.write(u.encode('utf-8') + '\t')
-                            
-                    else:
-                        # isinstance(u, numbers.Number)
-                        str_u = str(u).split('.')
-                        result_file.write(','.join(str_u) + '\t')
-
-                result_file.write('\n')
+                # print("\t".join([col for col in row]))
+                outfile.write('\t'.join(map(str, row)))
+                outfile.write('\n')
+                parts.append(row[1].split()[0])
                 row = cursor.fetchone()
+        except Exception as Err:
+            print(Err)
 
-            result_file.close()
-
-            conn.close()
-
-        except:
-            print "Oops! Something wrong with query!"
-    except:
-        print "no connection!!!"
-else:
-    print "SQL file is missing"
-
-
-
-
-
-
-
-
-# db05 = SQL('hq01db05', 'Callisto')
-# conn = pyodbc.connect(db05.sqlInfo)
-#
-# cursor = conn.cursor()
-# cursor.execute(query)
-#
-# row = cursor.fetchone()
+    new_outFile = output_file.replace("part", "_".join(set(parts)))
+    os.rename(output_file, new_outFile)

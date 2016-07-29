@@ -1,45 +1,32 @@
-import sys
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from datetime import datetime
 
 
-class CheckDemo(QWidget):
-    def __init__(self, parent=None):
-        super(CheckDemo, self).__init__(parent)
+class AgentsAct(datetime):
+    def getdate(self):
+        """ Returns now datetime format %m-%d-%Y %H:%M for SQL query """
+        get_date_obj = self.now()
+        return get_date_obj.strftime("%m-%d-%Y %H:%M")
 
-        layout = QHBoxLayout()
-        self.b1 = QCheckBox("Button1")
-        self.b1.setChecked(True)
-        self.b1.stateChanged.connect(lambda: self.btnstate(self.b1))
-        layout.addWidget(self.b1)
+    def get_user_date(self, user_day=1):
+        """ Return user act date """
+        now = self.now()
 
-        self.b2 = QCheckBox("Button2")
-        self.b2.toggled.connect(lambda: self.btnstate(self.b2))
-
-        layout.addWidget(self.b2)
-        self.setLayout(layout)
-        self.setWindowTitle("checkbox demo")
-
-    def btnstate(self, b):
-        if b.text() == "Button1":
-            if b.isChecked() is True:
-                print b.text() + " is selected"
-            else:
-                print b.text() + " is deselected"
-
-        if b.text() == "Button2":
-            if b.isChecked() is True:
-                print b.text() + " is selected"
-            else:
-                print b.text() + " is deselected"
+        while True:
+            try:
+                user_month_int = int(input("Ведите месяц: "))
+                if user_month_int in range(1, now.month + 1):
+                    break
+            except ValueError as Err:
+                print("Введите число!!! ", Err)
+                continue
+        user_date = self(now.year, user_month_int, user_day)
+        return user_date.strftime("%m-%d-%Y %H:%M")
 
 
-def main():
-    app = QApplication(sys.argv)
-    ex = CheckDemo()
-    ex.show()
-    sys.exit(app.exec_())
-
-
-if __name__ == '__main__':
-    main()
+date = AgentsAct()
+print(date.getdate())
+print(date.get_user_date())
+print(date.get_user_date(10))

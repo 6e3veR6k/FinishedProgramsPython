@@ -1,19 +1,12 @@
-class EvenLengthMixin:
-    def even_length(self):
-        return len(self) % 2 == 0
+def checkio(text):
+	VOWELS = "AEIOUY"
+	CONSONANTS = "BCDFGHJKLMNPQRSTVWXZ"
 
+	count = 0
 
-class MyList(list, EvenLengthMixin):
-    pass
+	for i in range(len(text)):
+		if (text[i] in VOWELS + VOWELS.lower() and text[i+1] in CONSONANTS + CONSONANTS.lower()) or 
+		(text[i] in CONSONANTS + CONSONANTS.lower() and text[i+1] in ) :
+			print(el)
 
-x = MyList()
-print x
-x.extend([1, 2, 3, 9, 1, 10])
-print x
-print x.even_length()
-
-# issubclass(A, D)
-# check if first class is subclass second
-# if A(B,C) and B(D, C) then A is subclass D
-
-print MyList.mro()
+checkio("Helo world !")

@@ -122,7 +122,11 @@ if os.path.exists('sql_query_commission_4.txt'):
     user_branch_code = branch_code.split()
     user_branch = []
     [user_branch.append(code) for code in user_branch_code if code not in user_branch and code in branch_code_list]
+
+    
     sql_query = " LEFT(B.BranchCode, 2)='100' "
+
+
     for code in sorted(user_branch):
         sql_query += "OR LEFT(B.BranchCode, 2)='{0}' ".format(code)
 
@@ -145,7 +149,7 @@ if os.path.exists('sql_query_commission_4.txt'):
     cursor.execute(tsql_query_formatted)
     row = cursor.fetchone()
     while row:
-        print '\t'.join([row[i].encode('utf-8') if not isinstance(row[i], Number) else ','.join(str(row[i]).split('.'))
+        print'\t'.join([row[i].encode('utf-8') if not isinstance(row[i], Number) else ','.join(str(row[i]).split('.'))
                          for i in range(len(row))])
         row = cursor.fetchone()
     sys.stdout.close()
