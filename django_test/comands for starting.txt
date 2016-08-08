@@ -1,0 +1,89 @@
+Установка пакета:
+	pip install virtualenv
+Создание виртуального окружения:
+	python -m virtualenv {env_name}
+Активируем переменную среду:
+	.\{env_name}\Scripts\activate
+
+
+Quickstart
+
+Installation
+Install SQL Server Management Studio or manually install Microsoft Data Access Components (MDAC).
+Install django-mssql with your favorite Python package manager:
+
+pip install django-mssql
+Add the DATABASES configuration.
+
+DATABASES = {
+    'default': {
+        'NAME': 'my_database',
+        'ENGINE': 'sqlserver_ado',
+        'HOST': 'dbserver\\ss2012',
+        'USER': '',
+        'PASSWORD': '',
+    }
+}
+Note
+
+Although the project is named django-mssql the python module is named sqlserver_ado.
+
+Do not include a django.db.backends. prefix. That is only for core backends that are included with Django, not 3rd party backends.
+Getting the code
+The project code is hosted on Bitbucket
+
+hg clone https://bitbucket.org/Manfre/django-mssql/
+Are you planning to contribute? See Contributing to Django-mssql.
+
+Dependencies
+Django
+Django 1.7 is supported by the current release.
+
+Support for Django 1.6 requires django-mssql v1.6
+
+Python
+This backend requires Python 2.7, 3.4.
+
+PyWin32
+PyWin32 build 212 or newer is required.
+
+Usage
+
+pip freeze [options]
+Description
+Output installed packages in requirements format.
+
+packages are listed in a case-insensitive sorted order.
+
+Options
+
+-r, --requirement <file>
+Use the order in the given requirements file and its comments when generating output.
+
+-f, --find-links <url>
+URL for finding packages, which will be added to the output.
+
+-l, --local
+If in a virtualenv that has global access, do not output globally-installed packages.
+
+--user
+Only output packages installed in user-site.
+
+--all
+Do not skip these packages in the output: pip, setuptools, distribute, wheel
+
+Examples
+Generate output suitable for a requirements file.
+
+$ pip freeze
+
+docutils==0.11
+Jinja2==2.7.2
+MarkupSafe==0.19
+Pygments==1.6
+Sphinx==1.2.2
+
+Generate a requirements file and then install from it in another environment.
+
+$ env1/bin/pip freeze > requirements.txt
+$ env2/bin/pip install -r requirements.txt

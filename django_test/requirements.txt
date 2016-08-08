@@ -1,0 +1,8 @@
+antiorm==1.2.1
+click==6.6
+db==0.4.4
+Django==1.8
+django-mssql==1.7
+first==2.0.1
+pip-tools==1.6.5
+six==1.10.0
